@@ -1,0 +1,15 @@
+<!-- component_list.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Component List</title>
+</head>
+<body>
+    <h1>Component List</h1>
+    <ul id="component_list">
+        {% for component in components %}
+            <li>{{ component.name }} - Points: {{ component.point_value }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

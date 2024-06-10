@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Filter Components</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js">
+        // Use noConflict() to release control of the $ variable
+        const jq = jQuery.noConflict();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+    const componentTypeSelect = document.getElementById('component_type');
+    const forms = {
+        gpu: document.getElementById('gpu_form'),
+        cpu: document.getElementById('cpu_form'),
+        psu: document.getElementById('psu_form'),
+        motherboard: document.getElementById('motherboard_form')
+    };
+
+    function updateFormDisplay() {
+    const selectedComponentType = componentTypeSelect.value;
+    for (const [key, form] of Object.entries(forms)) {
+        if (form) {
+            // Use jQuery's methods to show or hide the form
+            if (key === selectedComponentType) {
+                jq(form).show(); // Show the form
+            } else {
+                jq(form).hide(); // Hide the form
+            }
+        }
+    }
+}
+jq(document).ready(function() {
+    updateFormDisplay();
+});
+
+    componentTypeSelect.addEventListener('change', updateFormDisplay);
+    updateFormDisplay();  // Initial call to set the correct form visibility
+});
+
+function updateComponentList(componentType) {
+    const priceWeight = document.getElementById('id_price_weight').value;
+    const powerWeight = document.getElementById('id_power_weight').value;
+
+    // Get the CSRF token from the form
+    const csrftoken = getCookie('csrftoken');
+
+    // Perform an AJAX request to update the component list
+    fetch('/update_components/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            component_type: componentType,
+            price_weight: priceWeight,
+            power_weight: powerWeight
+            // Add other weighting values if needed
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        const componentList = document.getElementById('component_list');
+        if (componentList) {
+            componentList.innerHTML = data.component_list_html;
+            // Callback function to handle the updated component list
+            handleUpdatedComponentList();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function handleUpdatedComponentList() {
+    // Reload the component list
+    jq.ajax({
+        url: '/get_components/',  // URL to fetch updated component list
+        type: 'GET',
+        success: function(data) {
+            // Replace the existing component list with the updated one
+            jq('#component_list').html(data);
+        },
+        error: function(error) {
+            console.error('Error:', error);
+        }
+    });
+}
+
+
+
+    </script>
+</head>
+<body>
+    <h1>Filter and Sort Components</h1>
+    <form method="get" id="component_choice_form">
+        {{ component_choice_form.as_p }}
+        <button type="submit">Select Component</button>
+    </form>
+
+    <form method="post" id="gpu_form" style="display: none;">
+        {% csrf_token %}
+         <!-- Your existing form fields here -->
+        <label for="id_price_weight">Price Weight:</label>
+        <input type="number" id="id_price_weight" name="price_weight" value="{{ filter_form.price_weight.value }}" min="0" step="0.01">
+        <br>
+        <label for="id_power_weight">Power Weight:</label>
+        <input type="number" id="id_power_weight" name="power_weight" value="{{ filter_form.power_weight.value }}" min="0" step="0.01">
+        <br>
+        <!-- Add similar fields for other weighting values -->
+        <button type="button" onclick="updateComponentList(this.parentNode)">Update Weighting</button>
+    </form>
+
+    <!-- Add similar forms for CPU, PSU, and Motherboard -->
+
+    <div id="component_list">
+        {% include 'component_list.html' %}
+    </div>
+    
+    <!-- Other form elements and buttons for updating weighting -->
+    <script>
+        
+// Function to get the CSRF token from the cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+    </script>
+</body>
+</html>
